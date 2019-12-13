@@ -677,6 +677,7 @@ func TestCreateImporterPod(t *testing.T) {
 		pullPolicy string
 		podEnvVar  *importPodEnvVar
 		pvc        *v1.PersistentVolumeClaim
+		resourceRequirements *v1.ResourceRequirements
 	}
 
 	// create PVC
@@ -690,14 +691,14 @@ func TestCreateImporterPod(t *testing.T) {
 	}{
 		{
 			name:    "expect pod to be created for PVC with VolumeMode Filesystem",
-			args:    args{k8sfake.NewSimpleClientset(pvc), "test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc},
-			want:    MakeImporterPodSpec("test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, nil),
+			args:    args{k8sfake.NewSimpleClientset(pvc), "test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, nil},
+			want:    MakeImporterPodSpec("test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, nil, nil),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CreateImporterPod(tt.args.client, tt.args.image, tt.args.verbose, tt.args.pullPolicy, tt.args.podEnvVar, tt.args.pvc, nil)
+			got, err := CreateImporterPod(tt.args.client, tt.args.image, tt.args.verbose, tt.args.pullPolicy, tt.args.podEnvVar, tt.args.pvc, nil, tt.args.resourceRequirements)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateImporterPod() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -716,6 +717,7 @@ func TestMakeImporterPodSpec(t *testing.T) {
 		pullPolicy string
 		podEnvVar  *importPodEnvVar
 		pvc        *v1.PersistentVolumeClaim
+		resourceRequirements *v1.ResourceRequirements
 	}
 	// create PVC with VolumeMode: Filesystem
 	pvc := createPvc("testPVC2", "default", nil, nil)
@@ -734,18 +736,18 @@ func TestMakeImporterPodSpec(t *testing.T) {
 	}{
 		{
 			name:    "expect pod to be created for PVC with VolumeMode: Filesystem",
-			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc},
+			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc, nil},
 			wantPod: pod,
 		},
 		{
 			name:    "expect pod to be created for PVC with VolumeMode: Block",
-			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc1},
+			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc1, nil},
 			wantPod: pod1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MakeImporterPodSpec(tt.args.image, tt.args.verbose, tt.args.pullPolicy, tt.args.podEnvVar, tt.args.pvc, nil)
+			got := MakeImporterPodSpec(tt.args.image, tt.args.verbose, tt.args.pullPolicy, tt.args.podEnvVar, tt.args.pvc, nil, tt.args.resourceRequirements)
 
 			if !reflect.DeepEqual(got, tt.wantPod) {
 				t.Errorf("MakeImporterPodSpec() =\n%v\n, want\n%v", got, tt.wantPod)

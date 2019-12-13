@@ -258,6 +258,7 @@ type CDIConfig struct {
 type CDIConfigSpec struct {
 	UploadProxyURLOverride   *string `json:"uploadProxyURLOverride,omitempty"`
 	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
+	PodResourceRequirements *corev1.ResourceRequirements `json:"podResourceRequirements,omitempty"`
 }
 
 //CDIConfigStatus provides

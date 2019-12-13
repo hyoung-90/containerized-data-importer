@@ -3,6 +3,7 @@ package controller
 import (
 	"crypto/rsa"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -331,12 +332,58 @@ func GetScratchPvcStorageClass(client kubernetes.Interface, cdiclient clientset.
 	return ""
 }
 
+// GetPodResourceRequirements returns the ResourceRequirements needed to create temporary pods.
+// If the ResourceRequirements values are specified in CDIConfig, these values are taken and used.
+// If not, 0 is used as default values.
+func GetPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequirements, error) {
+	config, err := cdiclient.CdiV1alpha1().CDIConfigs().Get(common.ConfigName, metav1.GetOptions{})
+	if err != nil {
+		klog.Errorf("Unable to find CDI configuration, %v\n", err)
+		return nil, err
+	}
+
+	cpuLimit := resource.NewQuantity(0, resource.DecimalSI)
+	memoryLimit := resource.NewQuantity(0, resource.DecimalSI)
+	if config.Spec.PodResourceRequirements != nil && config.Spec.PodResourceRequirements.Limits != nil {
+		cpu, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceCPU]
+		if exist {
+			cpuLimit = &cpu
+		}
+
+		memory, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceMemory]
+		if exist {
+			memoryLimit = &memory
+		}
+	}
+
+	cpuRequest := resource.NewQuantity(0, resource.DecimalSI)
+	memoryRequest := resource.NewQuantity(0, resource.DecimalSI)
+	if config.Spec.PodResourceRequirements != nil && config.Spec.PodResourceRequirements.Requests != nil {
+		cpu, exist := config.Spec.PodResourceRequirements.Requests[v1.ResourceCPU]
+		if exist {
+			cpuRequest = &cpu
+		}
+
+		memory, exist := config.Spec.PodResourceRequirements.Requests[v1.ResourceMemory]
+		if exist {
+			memoryRequest = &memory
+		}
+	}
+
+	return &v1.ResourceRequirements{
+		Limits:   map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *cpuLimit,
+			v1.ResourceMemory: *memoryLimit},
+		Requests: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *cpuRequest,
+			v1.ResourceMemory: *memoryRequest},
+	}, nil
+}
+
 // CreateImporterPod creates and returns a pointer to a pod which is created based on the passed-in endpoint, secret
 // name, and pvc. A nil secret means the endpoint credentials are not passed to the
 // importer pod.
-func CreateImporterPod(client kubernetes.Interface, image, verbose, pullPolicy string, podEnvVar *importPodEnvVar, pvc *v1.PersistentVolumeClaim, scratchPvcName *string) (*v1.Pod, error) {
+func CreateImporterPod(client kubernetes.Interface, image, verbose, pullPolicy string, podEnvVar *importPodEnvVar, pvc *v1.PersistentVolumeClaim, scratchPvcName *string, resourceRequirements *v1.ResourceRequirements) (*v1.Pod, error) {
 	ns := pvc.Namespace
-	pod := MakeImporterPodSpec(image, verbose, pullPolicy, podEnvVar, pvc, scratchPvcName)
+	pod := MakeImporterPodSpec(image, verbose, pullPolicy, podEnvVar, pvc, scratchPvcName, resourceRequirements)
 
 	pod, err := client.CoreV1().Pods(ns).Create(pod)
 	if err != nil {
@@ -347,7 +394,7 @@ func CreateImporterPod(client kubernetes.Interface, image, verbose, pullPolicy s
 }
 
 // MakeImporterPodSpec creates and return the importer pod spec based on the passed-in endpoint, secret and pvc.
-func MakeImporterPodSpec(image, verbose, pullPolicy string, podEnvVar *importPodEnvVar, pvc *v1.PersistentVolumeClaim, scratchPvcName *string) *v1.Pod {
+func MakeImporterPodSpec(image, verbose, pullPolicy string, podEnvVar *importPodEnvVar, pvc *v1.PersistentVolumeClaim, scratchPvcName *string, resourceRequirements *v1.ResourceRequirements) *v1.Pod {
 	// importer pod name contains the pvc name
 	podName := fmt.Sprintf("%s-%s-", common.ImporterPodName, pvc.Name)
 
@@ -420,6 +467,7 @@ func MakeImporterPodSpec(image, verbose, pullPolicy string, podEnvVar *importPod
 							Protocol:      v1.ProtocolTCP,
 						},
 					},
+					Resources: *resourceRequirements,
 				},
 			},
 			RestartPolicy: v1.RestartPolicyOnFailure,

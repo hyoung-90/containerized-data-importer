@@ -250,9 +250,14 @@ func (ic *ImportController) createImporterPod(pvc *v1.PersistentVolumeClaim, pvc
 		return err
 	}
 
+	podResourceRequirements, err := GetPodResourceRequirements(ic.cdiClient)
+	if err != nil {
+		return err
+	}
+
 	// all checks passed, let's create the importer pod!
 	ic.expectPodCreate(pvcKey)
-	pod, err := CreateImporterPod(ic.clientset, ic.image, ic.verbose, ic.pullPolicy, podEnvVar, pvc, scratchPvcName)
+	pod, err := CreateImporterPod(ic.clientset, ic.image, ic.verbose, ic.pullPolicy, podEnvVar, pvc, scratchPvcName, podResourceRequirements)
 	if err != nil {
 		ic.observePodCreate(pvcKey)
 		return err
