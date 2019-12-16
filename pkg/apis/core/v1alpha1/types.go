@@ -265,6 +265,7 @@ type CDIConfigSpec struct {
 type CDIConfigStatus struct {
 	UploadProxyURL           *string `json:"uploadProxyURL,omitempty"`
 	ScratchSpaceStorageClass string  `json:"scratchSpaceStorageClass,omitempty"`
+	DefaultPodResourceRequirements *corev1.ResourceRequirements `json:"defaultPodResourceRequirements,omitempty"`
 }
 
 //CDIConfigList provides the needed parameters to do request a list of CDIConfigs from the system

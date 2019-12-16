@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"reflect"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -72,6 +74,12 @@ func (r *CDIConfigReconciler) Reconcile(req reconcile.Request) (reconcile.Result
 	}
 
 	if err := r.reconcileStorageClass(config); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	//TODO reconcileStorageClass 와 비슷한 레벨로 reconcileDefaultPodResourceRequirements 추가
+	// 여기서 default 세팅
+	if err := r.reconcileDefaultPodResourceRequirements(config); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -153,6 +161,58 @@ func (r *CDIConfigReconciler) reconcileStorageClass(config *cdiv1.CDIConfig) err
 	log.Info("No default storage class found, setting scratch space to blank")
 	// No storage class found, blank it out.
 	config.Status.ScratchSpaceStorageClass = ""
+	return nil
+}
+
+// TODO 변경
+func (r *CDIConfigReconciler) reconcileDefaultPodResourceRequirements(config *cdiv1.CDIConfig) error {
+	log := r.Log.WithName("CDIconfig").WithName("DefaultPodResourceRequirements")
+
+	// 최초 세팅
+	if config.Spec.PodResourceRequirements == nil { // && config.Status.DefaultPodResourceRequirements == nil  필요 ?
+		log.Info("Setting default pod resource requirements as our reasonable default values")
+
+		//TODO this default values could be changed
+		defaultCpu := resource.NewQuantity(0, resource.DecimalSI)
+		defaultMemory := resource.NewQuantity(0, resource.DecimalSI)
+		defaultLimit := map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *defaultCpu,
+			v1.ResourceMemory: *defaultMemory}
+		defaultRequest := map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *defaultCpu,
+			v1.ResourceMemory: *defaultMemory}
+
+		config.Status.DefaultPodResourceRequirements = &v1.ResourceRequirements{
+			Limits:   defaultLimit,
+			Requests: defaultRequest,
+		}
+		return nil
+	}
+
+	// Spec 으로부터 불러오는데 있는 값만 덮어쓰기, 없는 값은 default 그대로
+	log.Info("Setting default pod resource requirements from spec")
+	if config.Spec.PodResourceRequirements.Limits != nil {
+		cpu, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceCPU]
+		if exist {
+			config.Status.DefaultPodResourceRequirements.Limits[v1.ResourceCPU] = cpu
+		}
+
+		memory, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceMemory]
+		if exist {
+			config.Status.DefaultPodResourceRequirements.Limits[v1.ResourceMemory] = memory
+		}
+	}
+
+	if config.Spec.PodResourceRequirements.Requests != nil {
+		cpu, exist := config.Spec.PodResourceRequirements.Requests[v1.ResourceCPU]
+		if exist {
+			config.Status.DefaultPodResourceRequirements.Requests[v1.ResourceCPU] = cpu
+		}
+
+		memory, exist := config.Spec.PodResourceRequirements.Requests[v1.ResourceMemory]
+		if exist {
+			config.Status.DefaultPodResourceRequirements.Requests[v1.ResourceMemory] = memory
+		}
+	}
+
 	return nil
 }
 
@@ -293,6 +353,7 @@ func addConfigControllerWatches(mgr manager.Manager, configController controller
 				e.Object.(*routev1.Route).GetNamespace() == cdiNamespace
 		},
 	})
+	//TODO configController.Watch(&source.Kind{Type:v1.ResourceRequirements{}}, &handler.Funcs{}} 이런 비슷한 류 필요 ?
 	if IgnoreIsNoMatchError(err) != nil {
 		return err
 	}

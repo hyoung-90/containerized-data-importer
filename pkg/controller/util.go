@@ -3,7 +3,6 @@ package controller
 import (
 	"crypto/rsa"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -332,9 +331,7 @@ func GetScratchPvcStorageClass(client kubernetes.Interface, cdiclient clientset.
 	return ""
 }
 
-// GetPodResourceRequirements returns the ResourceRequirements needed to create temporary pods.
-// If the ResourceRequirements values are specified in CDIConfig, these values are taken and used.
-// If not, 0 is used as default values.
+// TODO config.Status.DefaultPodResourceRequirements 에 세팅할 reasonable value 는 config-controller.go 에서 세팅
 func GetPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequirements, error) {
 	config, err := cdiclient.CdiV1alpha1().CDIConfigs().Get(common.ConfigName, metav1.GetOptions{})
 	if err != nil {
@@ -342,40 +339,8 @@ func GetPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequ
 		return nil, err
 	}
 
-	cpuLimit := resource.NewQuantity(0, resource.DecimalSI)
-	memoryLimit := resource.NewQuantity(0, resource.DecimalSI)
-	if config.Spec.PodResourceRequirements != nil && config.Spec.PodResourceRequirements.Limits != nil {
-		cpu, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceCPU]
-		if exist {
-			cpuLimit = &cpu
-		}
-
-		memory, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceMemory]
-		if exist {
-			memoryLimit = &memory
-		}
-	}
-
-	cpuRequest := resource.NewQuantity(0, resource.DecimalSI)
-	memoryRequest := resource.NewQuantity(0, resource.DecimalSI)
-	if config.Spec.PodResourceRequirements != nil && config.Spec.PodResourceRequirements.Requests != nil {
-		cpu, exist := config.Spec.PodResourceRequirements.Requests[v1.ResourceCPU]
-		if exist {
-			cpuRequest = &cpu
-		}
-
-		memory, exist := config.Spec.PodResourceRequirements.Requests[v1.ResourceMemory]
-		if exist {
-			memoryRequest = &memory
-		}
-	}
-
-	return &v1.ResourceRequirements{
-		Limits:   map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *cpuLimit,
-			v1.ResourceMemory: *memoryLimit},
-		Requests: map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *cpuRequest,
-			v1.ResourceMemory: *memoryRequest},
-	}, nil
+	// DefaultPodResourceRequirements 의 모든 구성요소는 not nil 가정
+	return config.Status.DefaultPodResourceRequirements, nil
 }
 
 // CreateImporterPod creates and returns a pointer to a pod which is created based on the passed-in endpoint, secret
@@ -467,6 +432,7 @@ func MakeImporterPodSpec(image, verbose, pullPolicy string, podEnvVar *importPod
 							Protocol:      v1.ProtocolTCP,
 						},
 					},
+					// TODO potential null pointer ?
 					Resources: *resourceRequirements,
 				},
 			},
