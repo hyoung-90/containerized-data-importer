@@ -177,7 +177,6 @@ var _ = Describe("Controller route reconcile loop", func() {
 	})
 })
 
-// TODO 얘랑 비슷하게 podResourceRequirements reconcile loop 도 필요
 var _ = Describe("Controller storage class reconcile loop", func() {
 	It("Should set the scratchspaceStorageClass to blank if there is no default sc", func() {
 		reconciler, cdiConfig := createConfigReconciler(createStorageClassList(
@@ -244,6 +243,10 @@ var _ = Describe("Controller storage class reconcile loop", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cdiConfig.Status.ScratchSpaceStorageClass).To(Equal("test-default-sc"))
 	})
+})
+
+// TODO:
+var _ = Describe("Controller default pod resource requirements reconcile loop", func() {
 })
 
 func createConfigReconciler(objects ...runtime.Object) (*CDIConfigReconciler, *cdiv1.CDIConfig) {

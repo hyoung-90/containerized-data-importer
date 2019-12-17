@@ -77,8 +77,6 @@ func (r *CDIConfigReconciler) Reconcile(req reconcile.Request) (reconcile.Result
 		return reconcile.Result{}, err
 	}
 
-	//TODO reconcileStorageClass 와 비슷한 레벨로 reconcileDefaultPodResourceRequirements 추가
-	// 여기서 default 세팅
 	if err := r.reconcileDefaultPodResourceRequirements(config); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -167,6 +165,13 @@ func (r *CDIConfigReconciler) reconcileStorageClass(config *cdiv1.CDIConfig) err
 // TODO 변경
 func (r *CDIConfigReconciler) reconcileDefaultPodResourceRequirements(config *cdiv1.CDIConfig) error {
 	log := r.Log.WithName("CDIconfig").WithName("DefaultPodResourceRequirements")
+
+	if config.Spec.PodResourceRequirements != nil {
+		// Spec 값을 Status 값에 복사
+		return nil;
+	}
+
+	// Default를 Status 값에 복사
 
 	// 최초 세팅
 	if config.Spec.PodResourceRequirements == nil { // && config.Status.DefaultPodResourceRequirements == nil  필요 ?
@@ -353,7 +358,6 @@ func addConfigControllerWatches(mgr manager.Manager, configController controller
 				e.Object.(*routev1.Route).GetNamespace() == cdiNamespace
 		},
 	})
-	//TODO configController.Watch(&source.Kind{Type:v1.ResourceRequirements{}}, &handler.Funcs{}} 이런 비슷한 류 필요 ?
 	if IgnoreIsNoMatchError(err) != nil {
 		return err
 	}

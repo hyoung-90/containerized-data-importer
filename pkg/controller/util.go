@@ -331,7 +331,6 @@ func GetScratchPvcStorageClass(client kubernetes.Interface, cdiclient clientset.
 	return ""
 }
 
-// TODO config.Status.DefaultPodResourceRequirements 에 세팅할 reasonable value 는 config-controller.go 에서 세팅
 func GetPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequirements, error) {
 	config, err := cdiclient.CdiV1alpha1().CDIConfigs().Get(common.ConfigName, metav1.GetOptions{})
 	if err != nil {
@@ -339,7 +338,6 @@ func GetPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequ
 		return nil, err
 	}
 
-	// DefaultPodResourceRequirements 의 모든 구성요소는 not nil 가정
 	return config.Status.DefaultPodResourceRequirements, nil
 }
 
@@ -432,7 +430,6 @@ func MakeImporterPodSpec(image, verbose, pullPolicy string, podEnvVar *importPod
 							Protocol:      v1.ProtocolTCP,
 						},
 					},
-					// TODO potential null pointer ?
 					Resources: *resourceRequirements,
 				},
 			},
