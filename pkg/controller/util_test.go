@@ -669,6 +669,7 @@ func Test_checkIfLabelExists(t *testing.T) {
 	}
 }
 
+// TODO test 코드
 func TestCreateImporterPod(t *testing.T) {
 	type args struct {
 		client     kubernetes.Interface

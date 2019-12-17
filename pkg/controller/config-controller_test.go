@@ -177,6 +177,7 @@ var _ = Describe("Controller route reconcile loop", func() {
 	})
 })
 
+// TODO 얘랑 비슷하게 podResourceRequirements reconcile loop 도 필요
 var _ = Describe("Controller storage class reconcile loop", func() {
 	It("Should set the scratchspaceStorageClass to blank if there is no default sc", func() {
 		reconciler, cdiConfig := createConfigReconciler(createStorageClassList(
