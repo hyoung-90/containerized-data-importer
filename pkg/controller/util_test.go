@@ -669,7 +669,6 @@ func Test_checkIfLabelExists(t *testing.T) {
 	}
 }
 
-// TODO test 코드
 func TestCreateImporterPod(t *testing.T) {
 	type args struct {
 		client     kubernetes.Interface
@@ -684,6 +683,8 @@ func TestCreateImporterPod(t *testing.T) {
 	// create PVC
 	pvc := createPvc("testPVC2", "", nil, nil)
 
+	resourceRequirements := createDefaultPodResourceRequirements(0, 0, 0, 0)
+
 	tests := []struct {
 		name    string
 		args    args
@@ -692,8 +693,8 @@ func TestCreateImporterPod(t *testing.T) {
 	}{
 		{
 			name:    "expect pod to be created for PVC with VolumeMode Filesystem",
-			args:    args{k8sfake.NewSimpleClientset(pvc), "test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, nil},
-			want:    MakeImporterPodSpec("test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, nil, nil),
+			args:    args{k8sfake.NewSimpleClientset(pvc), "test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, resourceRequirements},
+			want:    MakeImporterPodSpec("test/image", "-v=5", "Always", &importPodEnvVar{"", "", "", "", "1G", "", false}, pvc, nil, resourceRequirements),
 			wantErr: false,
 		},
 	}
@@ -730,6 +731,10 @@ func TestMakeImporterPodSpec(t *testing.T) {
 	// create POD
 	pod1 := createPod(pvc1, DataVolName, nil)
 
+	resourceRequirements := createDefaultPodResourceRequirements(0, 0, 0, 0)
+	pod.Spec.Containers[0].Resources = *resourceRequirements
+	pod1.Spec.Containers[0].Resources = *resourceRequirements
+
 	tests := []struct {
 		name    string
 		args    args
@@ -737,12 +742,12 @@ func TestMakeImporterPodSpec(t *testing.T) {
 	}{
 		{
 			name:    "expect pod to be created for PVC with VolumeMode: Filesystem",
-			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc, nil},
+			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc, resourceRequirements},
 			wantPod: pod,
 		},
 		{
 			name:    "expect pod to be created for PVC with VolumeMode: Block",
-			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc1, nil},
+			args:    args{"test/myimage", "5", "Always", &importPodEnvVar{"", "", SourceHTTP, string(cdiv1.DataVolumeKubeVirt), "1G", "", false}, pvc1, resourceRequirements},
 			wantPod: pod1,
 		},
 	}
@@ -1918,5 +1923,22 @@ func createVolumeSnapshotCrd() *apiextensionsv1beta1.CustomResourceDefinition {
 				Kind:   reflect.TypeOf(crdv1.VolumeSnapshot{}).Name(),
 			},
 		},
+	}
+}
+
+func createDefaultPodResourceRequirements(limitCpuValue int64, limitMemoryValue int64, requestCpuValue int64, requestMemoryValue int64) *corev1.ResourceRequirements {
+	limitCpu := resource.NewQuantity(limitCpuValue, resource.DecimalSI)
+	limitMemory := resource.NewQuantity(limitMemoryValue, resource.DecimalSI)
+	requestCpu := resource.NewQuantity(requestCpuValue, resource.DecimalSI)
+	requestMemory := resource.NewQuantity(requestMemoryValue, resource.DecimalSI)
+
+	defaultLimit := map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *limitCpu,
+		corev1.ResourceMemory: *limitMemory}
+	defaultRequest := map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *requestCpu,
+		corev1.ResourceMemory: *requestMemory}
+
+	return &corev1.ResourceRequirements{
+		Limits: defaultLimit,
+		Requests: defaultRequest,
 	}
 }

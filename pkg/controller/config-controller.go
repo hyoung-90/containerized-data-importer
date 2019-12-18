@@ -162,34 +162,22 @@ func (r *CDIConfigReconciler) reconcileStorageClass(config *cdiv1.CDIConfig) err
 	return nil
 }
 
-// TODO 변경
 func (r *CDIConfigReconciler) reconcileDefaultPodResourceRequirements(config *cdiv1.CDIConfig) error {
 	log := r.Log.WithName("CDIconfig").WithName("DefaultPodResourceRequirements")
 
-	if config.Spec.PodResourceRequirements != nil {
-		// Spec 값을 Status 값에 복사
-		return nil;
-	}
+	log.Info("Setting default pod resource requirements as our reasonable default values")
 
-	// Default를 Status 값에 복사
+	//TODO this default values could be changed
+	defaultCpu := resource.NewQuantity(0, resource.DecimalSI)
+	defaultMemory := resource.NewQuantity(0, resource.DecimalSI)
+	defaultLimit := map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *defaultCpu,
+		v1.ResourceMemory: *defaultMemory}
+	defaultRequest := map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *defaultCpu,
+		v1.ResourceMemory: *defaultMemory}
 
-	// 최초 세팅
-	if config.Spec.PodResourceRequirements == nil { // && config.Status.DefaultPodResourceRequirements == nil  필요 ?
-		log.Info("Setting default pod resource requirements as our reasonable default values")
-
-		//TODO this default values could be changed
-		defaultCpu := resource.NewQuantity(0, resource.DecimalSI)
-		defaultMemory := resource.NewQuantity(0, resource.DecimalSI)
-		defaultLimit := map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *defaultCpu,
-			v1.ResourceMemory: *defaultMemory}
-		defaultRequest := map[v1.ResourceName]resource.Quantity{v1.ResourceCPU: *defaultCpu,
-			v1.ResourceMemory: *defaultMemory}
-
-		config.Status.DefaultPodResourceRequirements = &v1.ResourceRequirements{
-			Limits:   defaultLimit,
-			Requests: defaultRequest,
-		}
-		return nil
+	config.Status.DefaultPodResourceRequirements = &v1.ResourceRequirements{
+		Limits:   defaultLimit,
+		Requests: defaultRequest,
 	}
 
 	// Spec 으로부터 불러오는데 있는 값만 덮어쓰기, 없는 값은 default 그대로
