@@ -671,12 +671,12 @@ func Test_checkIfLabelExists(t *testing.T) {
 
 func TestCreateImporterPod(t *testing.T) {
 	type args struct {
-		client     kubernetes.Interface
-		image      string
-		verbose    string
-		pullPolicy string
-		podEnvVar  *importPodEnvVar
-		pvc        *v1.PersistentVolumeClaim
+		client               kubernetes.Interface
+		image                string
+		verbose              string
+		pullPolicy           string
+		podEnvVar            *importPodEnvVar
+		pvc                  *v1.PersistentVolumeClaim
 		resourceRequirements *v1.ResourceRequirements
 	}
 
@@ -714,11 +714,11 @@ func TestCreateImporterPod(t *testing.T) {
 
 func TestMakeImporterPodSpec(t *testing.T) {
 	type args struct {
-		image      string
-		verbose    string
-		pullPolicy string
-		podEnvVar  *importPodEnvVar
-		pvc        *v1.PersistentVolumeClaim
+		image                string
+		verbose              string
+		pullPolicy           string
+		podEnvVar            *importPodEnvVar
+		pvc                  *v1.PersistentVolumeClaim
 		resourceRequirements *v1.ResourceRequirements
 	}
 	// create PVC with VolumeMode: Filesystem
@@ -1927,18 +1927,12 @@ func createVolumeSnapshotCrd() *apiextensionsv1beta1.CustomResourceDefinition {
 }
 
 func createDefaultPodResourceRequirements(limitCpuValue int64, limitMemoryValue int64, requestCpuValue int64, requestMemoryValue int64) *corev1.ResourceRequirements {
-	limitCpu := resource.NewQuantity(limitCpuValue, resource.DecimalSI)
-	limitMemory := resource.NewQuantity(limitMemoryValue, resource.DecimalSI)
-	requestCpu := resource.NewQuantity(requestCpuValue, resource.DecimalSI)
-	requestMemory := resource.NewQuantity(requestMemoryValue, resource.DecimalSI)
-
-	defaultLimit := map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *limitCpu,
-		corev1.ResourceMemory: *limitMemory}
-	defaultRequest := map[corev1.ResourceName]resource.Quantity{corev1.ResourceCPU: *requestCpu,
-		corev1.ResourceMemory: *requestMemory}
-
 	return &corev1.ResourceRequirements{
-		Limits: defaultLimit,
-		Requests: defaultRequest,
+		Limits: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    *resource.NewQuantity(limitCpuValue, resource.DecimalSI),
+			corev1.ResourceMemory: *resource.NewQuantity(limitMemoryValue, resource.DecimalSI)},
+		Requests: map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    *resource.NewQuantity(requestCpuValue, resource.DecimalSI),
+			corev1.ResourceMemory: *resource.NewQuantity(requestMemoryValue, resource.DecimalSI)},
 	}
 }
