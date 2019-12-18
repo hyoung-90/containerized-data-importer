@@ -3,6 +3,7 @@ package controller
 import (
 	"crypto/rsa"
 	"fmt"
+	clientset "kubevirt.io/containerized-data-importer/pkg/client/clientset/versioned"
 	"strconv"
 	"time"
 
@@ -51,6 +52,7 @@ const (
 
 // CloneController represents the CDI Clone Controller
 type CloneController struct {
+	cdiClient clientset.Interface
 	Controller
 	recorder       record.EventRecorder
 	tokenValidator token.Validator
@@ -161,7 +163,13 @@ func (cc *CloneController) processPvcItem(pvc *v1.PersistentVolumeClaim) error {
 		}
 
 		cc.raisePodCreate(pvcKey)
-		sourcePod, err = CreateCloneSourcePod(cc.clientset, cc.image, cc.pullPolicy, clientName, pvc)
+
+		podResourceRequirements, err := GetPodResourceRequirements(cc.cdiClient)
+		if err != nil {
+			return err
+		}
+
+		sourcePod, err = CreateCloneSourcePod(cc.clientset, cc.image, cc.pullPolicy, clientName, pvc, podResourceRequirements)
 		if err != nil {
 			cc.observePodCreate(pvcKey)
 			return err

@@ -166,6 +166,7 @@ func (r *CDIConfigReconciler) reconcileDefaultPodResourceRequirements(config *cd
 	log := r.Log.WithName("CDIconfig").WithName("DefaultPodResourceRequirements")
 
 	// TODO: set as default value (0)
+	log.Info("Setting default pod resource requirements as default value (0)")
 	config.Status.DefaultPodResourceRequirements = &v1.ResourceRequirements{
 		Limits: map[v1.ResourceName]resource.Quantity{
 			v1.ResourceCPU:    *resource.NewQuantity(0, resource.DecimalSI),
@@ -177,7 +178,7 @@ func (r *CDIConfigReconciler) reconcileDefaultPodResourceRequirements(config *cd
 
 	if config.Spec.PodResourceRequirements != nil {
 		// TODO: Override
-		log.Info("Setting default pod resource requirements from spec")
+		log.Info("Overriding default pod resource requirements from spec if spec is not null")
 		if config.Spec.PodResourceRequirements.Limits != nil {
 			cpu, exist := config.Spec.PodResourceRequirements.Limits[v1.ResourceCPU]
 			if exist {

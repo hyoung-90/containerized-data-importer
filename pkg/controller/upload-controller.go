@@ -476,7 +476,12 @@ func (c *UploadController) getOrCreateUploadPod(pvc *v1.PersistentVolumeClaim, p
 			ClientName:     clientName,
 		}
 
-		pod, err = CreateUploadPod(args)
+		podResourceRequirements, err := GetPodResourceRequirements(c.cdiClient)
+		if err != nil {
+			return nil, err
+		}
+
+		pod, err = CreateUploadPod(args, podResourceRequirements)
 		if err != nil {
 			return nil, err
 		}
