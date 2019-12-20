@@ -164,7 +164,7 @@ func (cc *CloneController) processPvcItem(pvc *v1.PersistentVolumeClaim) error {
 
 		cc.raisePodCreate(pvcKey)
 
-		podResourceRequirements, err := GetPodResourceRequirements(cc.cdiClient)
+		podResourceRequirements, err := GetDefaultPodResourceRequirements(cc.cdiClient)
 		if err != nil {
 			return err
 		}

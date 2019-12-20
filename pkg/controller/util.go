@@ -331,7 +331,8 @@ func GetScratchPvcStorageClass(client kubernetes.Interface, cdiclient clientset.
 	return ""
 }
 
-func GetPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequirements, error) {
+// GetDefaultPodResourceRequirements gets default pod resource requirements from cdi config status
+func GetDefaultPodResourceRequirements(cdiclient clientset.Interface) (*v1.ResourceRequirements, error) {
 	config, err := cdiclient.CdiV1alpha1().CDIConfigs().Get(common.ConfigName, metav1.GetOptions{})
 	if err != nil {
 		klog.Errorf("Unable to find CDI configuration, %v\n", err)

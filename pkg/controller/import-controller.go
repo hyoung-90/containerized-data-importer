@@ -250,7 +250,7 @@ func (ic *ImportController) createImporterPod(pvc *v1.PersistentVolumeClaim, pvc
 		return err
 	}
 
-	podResourceRequirements, err := GetPodResourceRequirements(ic.cdiClient)
+	podResourceRequirements, err := GetDefaultPodResourceRequirements(ic.cdiClient)
 	if err != nil {
 		return err
 	}
