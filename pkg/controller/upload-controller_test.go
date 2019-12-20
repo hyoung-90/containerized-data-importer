@@ -307,8 +307,6 @@ func TestCreatesCloneTargetPodAndService(t *testing.T) {
 	clientName := fmt.Sprintf("%s/%s-%s/%s", source.Namespace, source.Name, pvc.Namespace, pvc.Name)
 	pod := createUploadClonePod(pvc, clientName)
 	pod.Namespace = ""
-	resourceRequirements := createDefaultPodResourceRequirements(0, 0, 0, 0)
-	pod.Spec.Containers[0].Resources = *resourceRequirements
 	f.expectCreatePodAction(pod)
 
 	f.podLister = append(f.podLister, pod)
