@@ -154,6 +154,11 @@ func (in *CDIConfigStatus) DeepCopyInto(out *CDIConfigStatus) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.DefaultPodResourceRequirements != nil {
+		in, out := &in.DefaultPodResourceRequirements, &out.DefaultPodResourceRequirements
+		*out = new(v1.ResourceRequirements)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
